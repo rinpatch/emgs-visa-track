@@ -43,6 +43,13 @@ def get_steps_and_new_status():
 
     soup = BeautifulSoup(results_req.text, "html.parser")
     steps = soup.find("table", {"id": "form-table"}).findChildren("tr")[1:]
+    percentage_table = soup.find("div", {"id": "accordion1"}).findChildren("td")
+    percentage = percentage_table[0].findChild("h2").text.strip()
+    percentage_explaination = percentage_table[1].findChild("p").text.strip()
+
+    print(percentage)
+    print(percentage_explaination)
+
     formatted_steps = []
     for step in steps:
         fields = step.findChildren("td")
@@ -50,24 +57,28 @@ def get_steps_and_new_status():
         short_desc = fields[1].text.strip()
         long_desc = fields[2].text.strip()
         formatted_steps.append({"date": date, "short_desc": short_desc, "long_desc": long_desc})
+    status = {"percentage": percentage, "explaination": percentage_explaination, "steps": formatted_steps}
     new_flag = True
     if exists(STEPS_COMPARE_FILE):
-        with open(STEPS_COMPARE_FILE, "rb") as steps_file:
-            old_steps = pickle.load(steps_file)
-            if (old_steps == formatted_steps):
+        with open(STEPS_COMPARE_FILE, "rb") as status_file:
+            old_status = pickle.load(status_file)
+            if (old_status == status):
                 new_flag = False
                
-    with open(STEPS_COMPARE_FILE, "wb") as steps_file:
-        pickle.dump(formatted_steps, steps_file)
-    return (new_flag, formatted_steps)
+    with open(STEPS_COMPARE_FILE, "wb") as status_file:
+        pickle.dump(status, status_file)
+    return (new_flag, status)
 
 
 with Client("my_session", api_id=API_ID, api_hash=API_HASH, bot_token=API_TOKEN) as app:
-    (new, statuses) = get_steps_and_new_status()
+    (new, status) = get_steps_and_new_status()
     if new:
         print("New updates found")
         message = "New visa update:\n"
-        for status in statuses:
+        message += f"Percentage: {status['percentage']}\n\n"
+        message += f"{status['explaination']}\n\n"
+        message += f"History:\n"
+        for status in status["steps"]:
             message += status["date"] + ": " + status["short_desc"] + "\n" + status["long_desc"] + "\n\n"
         app.send_message(USER, message)
     else:
