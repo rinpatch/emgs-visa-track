@@ -4,6 +4,7 @@ from os.path import exists
 from bs4 import BeautifulSoup
 from pyrogram import Client
 import os
+import sys
 from dotenv import load_dotenv
 
 load_dotenv()
